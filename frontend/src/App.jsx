@@ -9,7 +9,6 @@ import Reports from './pages/normalization/reports'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import ScanResult from './pages/normalization/scanresult'
 import NewScan from './pages/scan/externalscan/newscan'
-
 import QueuedJob from './pages/scan/externalscan/queuedjob'
 
 function App() {
