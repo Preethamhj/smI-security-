@@ -2,7 +2,7 @@ import React from 'react'
 import Login from './pages/auth/login'
 import Register from './pages/auth/register'
 import Landingpage from './pages/auth/landingpage'
-import Dashboard from './pages/monitoring/dashboard'
+import FullPage from './pages/monitoring/dashboard'
 import Details from './pages/history/details'
 import Alerts from './pages/monitoring/alerts'
 import Reports from './pages/normalization/reports'
@@ -20,7 +20,7 @@ function App() {
           <Route path="/" element={<Landingpage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<FullPage />} />
           <Route path="/details" element={<Details />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/reports" element={<Reports />} />

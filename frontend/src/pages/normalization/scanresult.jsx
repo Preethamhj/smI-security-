@@ -1,11 +1,11 @@
 import React from 'react'
 
-function ScanResult() {
+function Scanresult() {
   return (
     <div>
-      <h1>Scan Result</h1>
+      hlo
     </div>
   )
 }
 
-export default ScanResult
+export default Scanresult
