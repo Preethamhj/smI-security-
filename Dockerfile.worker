@@ -1,0 +1,60 @@
+# Dockerfile.worker
+# Base Image: A stable, modern Linux with easy package management
+FROM ubuntu:22.04
+
+# Set environment variables to suppress prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# --- 1. System Setup and Dependencies ---
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    wget \
+    curl \
+    git \
+    python3 \
+    python3-pip \
+    ca-certificates \
+    software-properties-common \
+    openjdk-17-jre-headless \
+    libpcap-dev \
+    # Cleanup unnecessary packages to reduce image size
+    && rm -rf /var/lib/apt/lists/*
+
+# --- 2. Install Security Tools ---
+
+# 2.1. Nmap (Network & Quick Scan)
+RUN apt-get update && apt-get install -y nmap
+
+# 2.2. SSLscan (SSL Scan)
+RUN apt-get update && apt-get install -y sslscan
+
+# 2.3. Nikto (Web Scan - Basic)
+RUN apt-get update && apt-get install -y nikto
+
+# 2.4. Testssl.sh (SSL Scan - Alternative/Comprehensive)
+RUN git clone --depth 1 https://github.com/drwetter/testssl.sh.git /opt/testssl.sh
+RUN chmod +x /opt/testssl.sh/testssl.sh
+ENV PATH="/opt/testssl.sh:$PATH"
+
+# 2.5. OWASP ZAP (Web Scan - Main)
+# We use the packaged version or install from ZAP's recommended repo
+# Using ZAP's stable pre-built package for reliability
+RUN wget -q -O /tmp/ZAP_2.14.0.tar.gz "https://github.com/zaproxy/zaproxy/releases/download/v2.14.0/ZAP_2.14.0_Linux.tar.gz" && \
+    tar -xzf /tmp/ZAP_2.14.0.tar.gz -C /opt && \
+    ln -s /opt/ZAP_2.14.0/zap.sh /usr/local/bin/zap
+ENV PATH="/opt/ZAP_2.14.0:$PATH"
+
+# --- 3. Node.js Environment Setup ---
+# Install Node.js (required for running the orchestrator logic)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+RUN apt-get install -y nodejs
+
+# --- 4. Application Setup ---
+WORKDIR /app
+COPY package.json package-lock.json ./
+# Install Node dependencies
+RUN npm install
+COPY . .
+
+# NOTE: This container is intended to run the worker process, NOT the API server.
+# The entry point will be defined in docker-compose.yml.

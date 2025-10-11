@@ -1,0 +1,21 @@
+# backend/Dockerfile.backend
+# Base image for Node.js applications
+FROM node:20-alpine
+
+# Create app directory
+WORKDIR /app
+
+# Copy package.json and install dependencies
+COPY backend/package*.json ./
+RUN npm install
+
+# Copy application source code
+COPY backend/src src/
+COPY backend/.env .env
+
+# Expose port (3000 as defined in your .env)
+EXPOSE 3000
+
+# Command to run the API server
+CMD ["npm", "start"] 
+# Note: In development, you would run 'npm run dev' using nodemon, but 'npm start' is better for Docker production images.

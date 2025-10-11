@@ -8,11 +8,8 @@ import Alerts from './pages/monitoring/alerts'
 import Reports from './pages/normalization/reports'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import ScanResult from './pages/normalization/scanresult'
-<<<<<<< HEAD
-=======
 // newscan is implemented under internalscan in this repo; import from there
 import NewScan from './pages/scan/internalscan/newscan'
->>>>>>> 49f75e9dfadde2347923688676eaa5e810559e5b
 import QueuedJob from './pages/scan/externalscan/queuedjob'
 
 function App() {
