@@ -8,7 +8,6 @@ import Alerts from './pages/monitoring/alerts'
 import Reports from './pages/normalization/reports'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import ScanResult from './pages/normalization/scanresult'
-import NewScan from './pages/scan/externalscan/newscan'
 import QueuedJob from './pages/scan/externalscan/queuedjob'
 
 function App() {
@@ -25,7 +24,6 @@ function App() {
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/scanresult" element={<ScanResult />} />
-          <Route path="/newscan" element={<NewScan />} />
           <Route path="/queuedjob" element={<QueuedJob />} />
         </Routes>
       </div>
