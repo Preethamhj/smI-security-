@@ -4,6 +4,8 @@ const api = require('./routes/api')
 const helmet = require('helmet')
 const app = express();
 connectDB();
+app.use(express.json()); // Parses incoming requests with JSON payloads
+app.use(express.urlencoded({ extended: true }))
 app.use(helmet());
 
 const PORT = 5000;

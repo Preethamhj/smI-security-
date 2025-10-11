@@ -21,14 +21,11 @@ const ScanSchema = new Schema ({
         type:String,
         required:true,
         enum :['FULL','QUICK','NETWORK','WEB','SSL'],
-        default:'QUICK',
-        required : true,
-    },
+        default:'QUICK',    },
     status:{
         type:String,
         enum:['QUEUED','IN_PROGRESS','COMPLETED','FAILED'],
         default:'QUEUED',
-        required:true,
     }
 });
 
