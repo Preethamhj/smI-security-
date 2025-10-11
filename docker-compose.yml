@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # --------------------------------------------------------------------------
+  # 1. PostgreSQL Database Service
+  # --------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: security-scanner-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "YOUR_DB_USER_HERE" # <<< REPLACE THIS
+      POSTGRES_PASSWORD: "YOUR_DB_PASSWORD_HERE" # <<< REPLACE THIS
+      POSTGRES_DB: "YOUR_DB_NAME_HERE" # <<< REPLACE THIS
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432" # Default PostgreSQL port
+
+  # --------------------------------------------------------------------------
+  # 2. Redis Cache and Job Queue Service
+  # --------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: security-scanner-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379" # Default Redis port
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  # --------------------------------------------------------------------------
+  # 3. Backend API Service (Skeleton)
+  #    The worker service is added in Phase 2/Sprint 2
+  # --------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.backend
+    container_name: security-scanner-backend
+    environment:
+      NODE_ENV: development
+      # Pass database connection variables
+      DB_HOST: postgres
+      DB_USER: "YOUR_DB_USER_HERE"
+      DB_PASS: "YOUR_DB_PASSWORD_HERE"
+      DB_NAME: "YOUR_DB_NAME_HERE"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: 3000
+    volumes:
+      - ./backend:/app
+      - /app/node_modules # Keep node_modules outside of volume sync
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  postgres_data:
+  redis_data:
