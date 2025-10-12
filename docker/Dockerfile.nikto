@@ -1,0 +1,29 @@
+FROM perl:5.38-slim
+
+# Install required packages
+RUN apt-get update && apt-get install -y \
+    git curl build-essential libssl-dev zlib1g-dev libffi-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r scanner && useradd -r -g scanner -d /home/scanner -s /usr/sbin/nologin scanner \
+ && mkdir -p /opt/nikto /home/scanner/out /home/scanner/tmp \
+ && chown -R scanner:scanner /opt/nikto /home/scanner
+
+# Clone Nikto
+RUN git clone --depth 1 https://github.com/sullo/nikto.git /opt/nikto \
+ && chmod +x /opt/nikto/program/nikto.pl
+
+# Install Perl modules
+RUN cpanm --notest IO::Socket::SSL LWP::UserAgent URI
+
+# Set working dir
+WORKDIR /home/scanner/tmp
+
+# Copy wrapper
+COPY docker/run-nikto.sh /usr/local/bin/run-nikto.sh
+RUN chmod +x /usr/local/bin/run-nikto.sh && chown root:root /usr/local/bin/run-nikto.sh
+
+USER scanner
+ENTRYPOINT ["/usr/local/bin/run-nikto.sh"]
+CMD ["-H"]
