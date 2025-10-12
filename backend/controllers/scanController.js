@@ -1,72 +1,79 @@
-// backend/src/controllers/scanController.js (CORRECTED)
+const scannerService = require('../services/scannerService');
+const Scan = require('../models/Scan');
 
-const Scan = require('../models/scan');
-const { isvalidIpAddress, isvalidDomainName, resolveDomainName } = require('../utils/validator'); 
-const mongoose = require('mongoose');
+exports.createScan = async (req, res) => {
+  try {
+    const { target, scanType } = req.body;
 
-// MOCK USER ID: Since authentication is not yet implemented, 
-// we use a static, valid MongoDB ObjectId.
-const MOCK_USER_ID = new mongoose.Types.ObjectId('60a7e7800000000000000001');
-
-exports.createScan = async (req,res)=>{
- const { target , scanType='QUICK', scanOptions = {}} = req.body;
- 
- if(!target){
-    return res.status(400).json({
-        error:'Validation Error',
-        message:'A target (domain or IP address ) is required to start a scan '
-    });
- }
- 
- let finaltraget = target ;
- let resolveip = null;
-
- try{
-    if(isvalidIpAddress(target)){
-        resolveip = target;
-    }
-    else if(isvalidDomainName(target)){
-        const cleanedDomain = target.replace(/^https?:\/\//,'');
-        resolveip = await resolveDomainName(cleanedDomain);
-        finaltraget = cleanedDomain;
-    } else {
-        // ADDED: Better error handling for invalid format
-        return res.status(400).json({ 
-            error: 'Validation Error', 
-            message: 'Invalid target format. Please provide a valid IP address or domain name.' 
-        });
+    // Validate input
+    if (!target) {
+      return res.status(400).json({ error: 'Target is required' });
     }
- }catch(err){
-    return res.status(400).json({
-        error:'Invalid Target',
-        message: err.message
-    });
- }
-    
-    try{
-    const newScan = new Scan({
-        // FIX: Use the MOCK_USER_ID instead of the undefined req.user.id
-        userId: MOCK_USER_ID, 
-        target: finaltraget,
-        resolvedIp: resolveip,  
-        scanType,
-        scanOptions
-    });
 
-    const savedscan = await newScan.save();
-    // NOTE: Changed status to 202 Accepted for background processing
-    return res.status(202).json({ 
-        message:'Scan request accepted and saved to database.',
-        scanId: savedscan._id, // Return ID for status tracking
-        target: savedscan.target,
-        status: savedscan.status
-    });
-    }catch(err){
-        console.error('Error creating scan:', err);
-        // Return a 500 status for database errors
-        return res.status(500).json({
-            error:'Database Error',
-            message:'Failed to save the scan request to the database. Check MongoDB connection/schema.'
-        });
-    }
+    // DNS resolution (your existing code)
+    const dns = require('dns').promises;
+    let resolvedIp = target;
+
+    if (!this.isValidIP(target)) {
+      try {
+        const addresses = await dns.resolve4(target);
+        resolvedIp = addresses[0];
+      } catch (dnsError) {
+        return res.status(400).json({ 
+          error: 'Failed to resolve domain',
+          details: dnsError.message 
+        });
+      }
+    }
+
+    // Create scan record
+    const scan = await Scan.create({
+      target: target,
+      resolvedIp: resolvedIp,
+      scanType: scanType || 'QUICK',
+      status: 'RUNNING',
+      startedAt: new Date()
+    });
+
+    // Return immediately
+    res.status(202).json({
+      scanId: scan._id,
+      message: 'Scan started',
+      status: 'RUNNING'
+    });
+
+    // Execute scan in background (non-blocking)
+    executeScanInBackground(scan._id, resolvedIp, scan.scanType);
+
+  } catch (error) {
+    console.error('Error creating scan:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Background execution function
+async function executeScanInBackground(scanId, target, scanType) {
+  try {
+    console.log(`[Background] Starting scan ${scanId}`);
+
+    // Execute scanners
+    const results = await scannerService.executeScan(target, scanType);
+
+    // Update scan status
+    await Scan.findByIdAndUpdate(scanId, {
+      status: 'COMPLETED',
+      finishedAt: new Date()
+    });
+
+    console.log(`[Background] Scan ${scanId} completed`);
+
+  } catch (error) {
+    console.error(`[Background] Scan ${scanId} failed:`, error);
+
+    await Scan.findByIdAndUpdate(scanId, {
+      status: 'FAILED',
+      finishedAt: new Date(),
+      error: error.message
+    });
+  }
 }
