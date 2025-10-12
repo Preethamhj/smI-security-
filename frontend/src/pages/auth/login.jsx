@@ -78,7 +78,7 @@ export default function Login() {
                   value={formData.password}
                   onChange={handleChange}
                   className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-12 pr-12 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                  placeholder="Enter your password"
+                  placeholder="Enter your password."
                   required
                 />
                 <button
