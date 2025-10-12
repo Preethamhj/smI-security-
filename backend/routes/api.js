@@ -1,10 +1,10 @@
 // backend/src/routes/api.js - UPDATED
 const express = require('express');
 const router = express.Router();
-const scanController = require('../controllers/scancontroller'); 
+const ScanController = require('../controllers/scanController'); 
 
 // POST /api/v1/scans - Create a new scan and store in DB (Now functional)
-router.post('/scans', scanController.createScan);
+router.post('/scans', ScanController.createScan);
 
 // GET /api/v1/scans/:id - Get scan status or results (Placeholder for Phase 2/3)
 router.get('/scans/:id', (req, res) => {

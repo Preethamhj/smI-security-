@@ -1,0 +1,27 @@
+# /docker/Dockerfile.nmap
+# Purpose: small containerized Nmap scanner with a non-root user and hardened runtime posture
+FROM alpine:3.18
+
+# Install nmap (and keep image small)
+RUN apk add --no-cache \
+    nmap \
+    ca-certificates \
+ && addgroup -S scanner \
+ && adduser -S -G scanner -h /home/scanner -s /sbin/nologin scanner \
+ && mkdir -p /home/scanner \
+ && chown -R scanner:scanner /home/scanner
+
+WORKDIR /home/scanner
+
+# Use non-root user for runtime
+USER scanner
+
+# Entrypoint is nmap (exec form — avoids a shell)
+ENTRYPOINT ["nmap"]
+
+# Default to printing help; callers pass args to run scans
+CMD ["--help"]
+
+# Metadata
+LABEL org.opencontainers.image.title="nmap-scanner"
+LABEL org.opencontainers.image.description="Minimal Nmap scanner image running as non-root user."
