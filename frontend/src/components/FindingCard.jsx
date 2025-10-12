@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 
 const FindingCard = ({ finding }) => {
+  // Defensive check: If finding is null or undefined, prevent crash
+  if (!finding) {
+    // In a real app, you might just return null or log an error.
+    return <div className="p-4 bg-red-900/10 text-red-400 rounded-lg">Error: Finding data is missing for this card.</div>;
+  }
+    
   const [isExpanded, setIsExpanded] = useState(false);
   const [isResolved, setIsResolved] = useState(false);
 
@@ -11,7 +17,8 @@ const FindingCard = ({ finding }) => {
       medium: { bg: 'bg-yellow-500/10', border: 'border-yellow-500', text: 'text-yellow-400', badge: 'bg-yellow-500/20 text-yellow-300' },
       low: { bg: 'bg-blue-500/10', border: 'border-blue-500', text: 'text-blue-400', badge: 'bg-blue-500/20 text-blue-300' }
     };
-    return colors[severity] || colors.low;
+    // Use .toLowerCase() for safety and default to 'low' if severity is invalid
+    return colors[severity?.toLowerCase()] || colors.low;
   };
 
   const getCategoryIcon = (category) => {
@@ -35,6 +42,7 @@ const FindingCard = ({ finding }) => {
     return icons[category] || icons.Network;
   };
 
+  // This is line 38 in your original code, where the error occurred:
   const colors = getSeverityColor(finding.severity);
 
   return (

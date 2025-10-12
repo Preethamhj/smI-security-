@@ -1,4 +1,7 @@
 import React, { useState } from "react";
+import ScanForm from "../../components/ScanForm";
+import FindingCard from "../../components/FindingCard"
+ import InternalScanCard from "../../components/internalscan";
 
 // --- Utility Components ---
 const LucideIcon = ({ name, className = "w-5 h-5" }) => {
@@ -252,35 +255,16 @@ const ExternalScanPage = () => (
         and attack simulation against public-facing assets. Non-intrusive and
         ideal for initial risk assessment.
       </p>
-      <div className="mt-6 space-y-4">
-        <input
-          type="url"
-          placeholder="Enter Domain or Public IP (e.g., example.com)"
-          className="w-full p-3 bg-slate-900/50 border border-slate-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-        />
-        <button
-          type="button"
-          className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg shadow-blue-500/50 hover:shadow-blue-500/70 transform hover:scale-105"
-        >
-          Start Baseline Scan
-        </button>
-      </div>
+      <ScanForm/>
+     
     </Card>
   </div>
 );
 
 const InternalScanPage = () => (
   <div className="space-y-8">
-    <Card title="Initiate Internal & Credentialed Scan">
-      <p className="text-gray-300 mb-4">
-        This involves deeper checks on the Server and Database layers. Supports
-        local-runner scripts for privacy and ephemeral credential handling for
-        authenticated checks.
-      </p>
-      <button className="mt-6 w-full py-3 px-4 bg-slate-700 text-white font-bold rounded-lg hover:bg-slate-600 transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
-        Configure Credential Vault & Target
-      </button>
-    </Card>
+   < InternalScanCard/>
+   
   </div>
 );
 
@@ -360,56 +344,7 @@ const HistoryPage = () => (
 
 const FindingsPage = () => (
   <div className="space-y-6">
-    <Card title="Canonical Findings & Remediation">
-      <p className="text-gray-300 mb-4">
-        View normalized security findings. Converted to Simple Remediation Cards
-        for immediate action.
-      </p>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="p-4 bg-red-500/10 text-red-300 rounded-lg shadow-lg backdrop-blur-sm border border-red-500/30">
-          <p className="text-2xl font-bold">2</p>
-          <p className="text-sm">High Severity</p>
-        </div>
-        <div className="p-4 bg-yellow-500/10 text-yellow-300 rounded-lg shadow-lg backdrop-blur-sm border border-yellow-500/30">
-          <p className="text-2xl font-bold">5</p>
-          <p className="text-sm">Medium Severity</p>
-        </div>
-        <div className="p-4 bg-blue-500/10 text-blue-300 rounded-lg shadow-lg backdrop-blur-sm border border-blue-500/30">
-          <p className="text-2xl font-bold">18</p>
-          <p className="text-sm">Low/Info Findings</p>
-        </div>
-      </div>
-
-      <h3 className="text-lg font-semibold text-cyan-300 mb-3">
-        Example Finding:
-      </h3>
-      <div className="p-4 border-l-4 border-red-500 bg-slate-900/50 rounded-lg backdrop-blur-sm">
-        <p className="text-sm font-bold text-red-400">
-          High: SQL Injection (ASSET-1234)
-        </p>
-        <p className="text-xs italic text-gray-500 my-1">
-          Scanner: owasp-zap:2.12.0 | First Seen: 2025-09-16
-        </p>
-        <p className="text-gray-300 text-sm mt-2">
-          Blind SQL injection detected in{" "}
-          <span className="font-mono text-cyan-400">/order/submit</span> when
-          submitting special payloads.
-        </p>
-        <div className="mt-3 p-3 bg-slate-800/50 border border-slate-700 rounded-lg">
-          <p className="font-semibold text-sm mb-1 text-cyan-300">
-            Simple Remediation Card
-          </p>
-          <p className="text-xs text-gray-400">
-            Action: Validate and parameterize database queries. Apply WAF rule
-            to block exploit patterns.
-          </p>
-        </div>
-      </div>
-    </Card>
-    <button className="py-2 px-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg shadow-blue-500/50 transform hover:scale-105">
-      Generate Exportable Compliance Report (PDF)
-    </button>
+    <FindingCard/>
   </div>
 );
 
