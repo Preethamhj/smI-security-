@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Zap, Users, Shield, Clock, HardHat, AlertTriangle, ArrowRight, Activity, Calendar } from 'lucide-react';
+import { initiateScan } from '../services/external';  
 
 // Define the available primary scan types and their default options for the API payload
 const SCAN_TYPES = [
@@ -98,61 +99,61 @@ const ScanForm = () => {
 
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setScanResult(null);
+  e.preventDefault();
+  setError('');
+  setScanResult(null);
 
-    // --- Validation ---
-    if (!formData.target.trim()) {
-      setError('Please enter a target domain or IP address');
-      return;
-    }
-    if (!validateInput(formData.target)) {
-      setError('Invalid domain or IP format. Example: example.com or 192.168.1.1');
-      return;
-    }
-    if (!formData.scanType) {
-      setError('Please select a scan type.');
-      return;
-    }
-    if (formData.scheduleType === 'scheduled' && (!formData.scheduleDays || formData.scheduleDays < 1)) {
-        setError('Please enter a valid number of days (1 or more) for the scheduled scan.');
-        return;
-    }
+  // --- Validation ---
+  if (!formData.target.trim()) {
+    setError('Please enter a target domain or IP address');
+    return;
+  }
+  if (!validateInput(formData.target)) {
+    setError('Invalid domain or IP format. Example: example.com or 192.168.1.1');
+    return;
+  }
+  if (!formData.scanType) {
+    setError('Please select a scan type.');
+    return;
+  }
+  if (
+    formData.scheduleType === 'scheduled' &&
+    (!formData.scheduleDays || formData.scheduleDays < 1)
+  ) {
+    setError('Please enter a valid number of days (1 or more) for the scheduled scan.');
+    return;
+  }
 
-    setLoading(true);
+  setLoading(true);
 
-    // --- Constructing the API Payload ---
-    const payload = {
-        target: formData.target,
-        scanType: formData.scanType,
-        scanOptions: formData.scanOptions,
-    };
-    
-    console.log('API Payload to be sent:', payload); // Debugging the final payload structure
-
-    // Mock API call simulation
-    try {
-      // Simulate network delay for scan initiation
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const newScanJob = {
-        ...formData,
-        jobId: `SCAN-${Date.now()}`,
-        // Note: The backend uses the payload structure. The frontend displays the formData structure.
-        apiPayload: payload 
-      };
-      
-      // Update result state to show confirmation
-      setScanResult(newScanJob);
-
-    } catch (err) {
-      console.error('Scan initiation error:', err);
-      setError('Failed to initiate scan job. Please check connectivity.');
-    } finally {
-      setLoading(false);
-    }
+  // --- Construct API Payload ---
+  const payload = {
+    target: formData.target,
+    scanType: formData.scanType,
+    scanOptions: formData.scanOptions,
   };
+
+  console.log('API Payload to be sent:', payload); // Debugging the final payload structure
+
+  try {
+    // Actual API call (not mock)
+    const response = await initiateScan(payload);
+
+    // Check for response validity
+    if (!response || response.error) {
+      throw new Error(response?.error || 'Unknown API error');
+    }
+
+    // Assuming the API returns a scan job or result object
+    setScanResult(response);
+  } catch (err) {
+    console.error('Scan initiation error:', err);
+    setError('Failed to initiate scan job. Please check connectivity.');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
   return (
