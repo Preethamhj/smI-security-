@@ -1,12 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Zap, Users, Shield, Clock, HardHat, AlertTriangle, ArrowRight, Activity, Calendar } from 'lucide-react';
 
-// Define available scan vectors for detailed selection
-const SCAN_VECTORS = [
-  { key: 'network', label: 'Network & Port Scanning', icon: Activity, description: 'Open ports and service banners.' },
-  { key: 'ssl', label: 'SSL/TLS Configuration', icon: Shield, description: 'Cipher strength and certificate validity.' },
-  { key: 'web', label: 'Web/Application Checks', icon: HardHat, description: 'HTTP headers and application surface.' },
-  { key: 'vulnerabilities', label: 'Known Vulnerabilities (CVE)', icon: AlertTriangle, description: 'Publicly disclosed exposures.' },
+// Define the available primary scan types and their default options for the API payload
+const SCAN_TYPES = [
+  { 
+    key: 'QUICK', 
+    label: 'Quick Baseline Scan', 
+    description: 'Baseline port and service identification.', 
+    icon: Clock,
+    defaultOptions: { portList: '1-1024' } 
+  },
+  { 
+    key: 'FULL', 
+    label: 'Full Comprehensive Scan', 
+    description: 'Comprehensive discovery and deep vulnerability check.', 
+    icon: Zap,
+    defaultOptions: { vulnerabilityDepth: 'medium' } 
+  },
+  { 
+    key: 'NETWORK', 
+    label: 'Advanced Network Scan', 
+    description: 'Host discovery, OS fingerprinting, advanced version detection.', 
+    icon: Activity,
+    defaultOptions: { osDetection: true, portRange: '1-65535' } 
+  },
+  { 
+    key: 'WEB', 
+    label: 'Web Application Scan', 
+    description: 'Application layer crawling, attack simulation, and misconfiguration checks.', 
+    icon: HardHat,
+    defaultOptions: { maxDepth: 5, spiderEngine: 'ZAP' } 
+  },
+  { 
+    key: 'SSL', 
+    label: 'SSL/TLS Analysis', 
+    description: 'Cipher strength and certificate validity.', 
+    icon: Shield,
+    defaultOptions: { enforceStrongCiphers: true } 
+  },
 ];
 
 const initialFormData = {
@@ -14,10 +45,11 @@ const initialFormData = {
   ownerContact: '',
   scheduleType: 'once', // 'once' or 'scheduled'
   scheduleDays: 7, // Default days for scheduled scan
-  scanVectors: SCAN_VECTORS.map(v => v.key), // Start with all vectors selected
+  scanType: 'QUICK', // Now a single string for the primary scan type
+  scanOptions: SCAN_TYPES.find(t => t.key === 'QUICK').defaultOptions, // Default options based on initial scanType
 };
 
-const Scanform = () => {
+const ScanForm = () => {
   // State for all form data, consolidated into a single object
   const [formData, setFormData] = useState(initialFormData);
   
@@ -39,7 +71,7 @@ const Scanform = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type } = e.target;
     let newValue = value;
 
     if (name === 'scheduleDays' && type === 'number') {
@@ -52,13 +84,16 @@ const Scanform = () => {
     }));
   };
   
-  const toggleScanVector = (key) => {
-    setFormData(prev => {
-      const vectors = prev.scanVectors.includes(key)
-        ? prev.scanVectors.filter(v => v !== key)
-        : [...prev.scanVectors, key];
-      return { ...prev, scanVectors: vectors };
-    });
+  // New function to handle selecting a primary scan type
+  const selectScanType = (typeKey) => {
+    const selectedType = SCAN_TYPES.find(t => t.key === typeKey);
+    if (selectedType) {
+        setFormData(prev => ({
+            ...prev,
+            scanType: typeKey,
+            scanOptions: selectedType.defaultOptions, // Update scanOptions based on the selected type
+        }));
+    }
   };
 
 
@@ -67,6 +102,7 @@ const Scanform = () => {
     setError('');
     setScanResult(null);
 
+    // --- Validation ---
     if (!formData.target.trim()) {
       setError('Please enter a target domain or IP address');
       return;
@@ -75,8 +111,8 @@ const Scanform = () => {
       setError('Invalid domain or IP format. Example: example.com or 192.168.1.1');
       return;
     }
-    if (formData.scanVectors.length === 0) {
-      setError('Please select at least one scan vector to perform.');
+    if (!formData.scanType) {
+      setError('Please select a scan type.');
       return;
     }
     if (formData.scheduleType === 'scheduled' && (!formData.scheduleDays || formData.scheduleDays < 1)) {
@@ -86,6 +122,15 @@ const Scanform = () => {
 
     setLoading(true);
 
+    // --- Constructing the API Payload ---
+    const payload = {
+        target: formData.target,
+        scanType: formData.scanType,
+        scanOptions: formData.scanOptions,
+    };
+    
+    console.log('API Payload to be sent:', payload); // Debugging the final payload structure
+
     // Mock API call simulation
     try {
       // Simulate network delay for scan initiation
@@ -93,7 +138,9 @@ const Scanform = () => {
       
       const newScanJob = {
         ...formData,
-        jobId: `SCAN-${Date.now()}`
+        jobId: `SCAN-${Date.now()}`,
+        // Note: The backend uses the payload structure. The frontend displays the formData structure.
+        apiPayload: payload 
       };
       
       // Update result state to show confirmation
@@ -176,34 +223,34 @@ const Scanform = () => {
               />
             </div>
 
-            {/* Scan Vector Selection (Replaces Intensity and details deep scan options) */}
+            {/* Scan Type Selection (New: Single Select) */}
             <div>
               <label className="text-cyan-300 text-sm font-semibold block mb-3 flex items-center gap-2">
                 <Zap className="w-4 h-4" />
-                Select Scan Vectors (Deep Scan Components)
+                Select Scan Type
               </label>
-              <div className="grid grid-cols-2 gap-4">
-                {SCAN_VECTORS.map(vector => {
-                    const isSelected = formData.scanVectors.includes(vector.key);
-                    const VectorIcon = vector.icon;
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {SCAN_TYPES.map(type => {
+                    const isSelected = formData.scanType === type.key;
+                    const TypeIcon = type.icon;
 
                     return (
                         <button
-                            key={vector.key}
+                            key={type.key}
                             type="button"
-                            onClick={() => toggleScanVector(vector.key)}
+                            onClick={() => selectScanType(type.key)}
                             disabled={loading}
-                            className={`p-4 rounded-lg border-2 text-left transition-all duration-300 disabled:opacity-50 ${
+                            className={`p-3 rounded-lg border-2 text-left transition-all duration-300 disabled:opacity-50 ${
                                 isSelected
                                 ? 'border-cyan-500 bg-cyan-500/10 shadow-lg shadow-cyan-500/20'
                                 : 'border-slate-700 bg-slate-900/50 hover:border-slate-600'
                             }`}
                         >
-                            <div className="flex items-start mb-2 gap-2">
-                                <VectorIcon className={`w-6 h-6 flex-shrink-0 ${isSelected ? 'text-cyan-400' : 'text-gray-400'}`} />
+                            <div className="flex items-start gap-2">
+                                <TypeIcon className={`w-5 h-5 flex-shrink-0 ${isSelected ? 'text-cyan-400' : 'text-gray-400'}`} />
                                 <div>
-                                    <p className={`font-semibold ${isSelected ? 'text-cyan-300' : 'text-gray-400'}`}>{vector.label}</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">{vector.description}</p>
+                                    <p className={`font-semibold text-sm ${isSelected ? 'text-cyan-300' : 'text-gray-400'}`}>{type.label}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">{type.description}</p>
                                 </div>
                             </div>
                         </button>
@@ -313,9 +360,12 @@ const Scanform = () => {
             <div className="grid grid-cols-2 gap-3 text-sm text-gray-300">
               <p><span className="text-green-400 font-medium">Job ID:</span> {scanResult.jobId}</p>
               <p><span className="text-green-400 font-medium">Target:</span> {scanResult.target}</p>
-              <p><span className="text-green-400 font-medium">Scan Vectors:</span> {scanResult.scanVectors.join(', ')}</p>
+              <p><span className="text-green-400 font-medium">Scan Type:</span> {scanResult.scanType}</p>
               <p><span className="text-green-400 font-medium">Schedule:</span> {scanResult.scheduleType === 'once' ? 'One-Time' : `Every ${scanResult.scheduleDays} days`}</p>
               <p><span className="text-green-400 font-medium">Contact:</span> {scanResult.ownerContact || 'N/A'}</p>
+              <p className="col-span-2"><span className="text-green-400 font-medium">API Options:</span> 
+                  <code className="bg-slate-700/50 p-1 rounded text-xs ml-2">{JSON.stringify(scanResult.apiPayload.scanOptions)}</code>
+              </p>
             </div>
             <p className="text-xs text-gray-400 mt-4">The security assessment is now queued. Results will be available in your dashboard shortly.</p>
           </div>
@@ -352,4 +402,4 @@ const Scanform = () => {
   );
 };
 
-export default Scanform;
+export default ScanForm;

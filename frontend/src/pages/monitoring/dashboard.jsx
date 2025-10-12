@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Scanform from "../../components/ScanForm";
+import ScanForm from "../../components/ScanForm";
 import FindingCard from "../../components/FindingCard"
  import InternalScanCard from "../../components/internalscan";
 
@@ -255,7 +255,7 @@ const ExternalScanPage = () => (
         and attack simulation against public-facing assets. Non-intrusive and
         ideal for initial risk assessment.
       </p>
-      <Scanform/>
+      <ScanForm/>
      
     </Card>
   </div>
