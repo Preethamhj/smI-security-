@@ -1,17 +1,22 @@
-// backend/src/routes/api.js - UPDATED
 const express = require('express');
 const router = express.Router();
-const ScanController = require('../controllers/scanController'); 
+// Import the controller functions (createScan and getScanStatus)
+const scanController = require('../controllers/scancontroller'); 
 
-// POST /api/v1/scans - Create a new scan and store in DB (Now functional)
-router.post('/scans', ScanController.createScan);
+// --- Scan Routes ---
 
-// GET /api/v1/scans/:id - Get scan status or results (Placeholder for Phase 2/3)
-router.get('/scans/:id', (req, res) => {
-    // This will connect to a read controller in Phase 2
-    res.status(200).json({ 
-        message: `Placeholder: Ready to fetch details for Scan ID ${req.params.id}` 
-    });
-});
+/**
+ * POST /scans
+ * Route to initiate a new security scan job.
+ * This should correspond to the successful curl test you just ran.
+ */
+router.post('/scans', scanController.createScan);
+
+/**
+ * GET /scans/:scanId
+ * Route to retrieve the status and details of a specific scan job.
+ * This uses the new getScanStatus function you added.
+ */
+router.get('/scans/:scanId', scanController.getScanStatus);
 
 module.exports = router;

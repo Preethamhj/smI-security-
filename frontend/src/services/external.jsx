@@ -1,74 +1,86 @@
-import React from 'react'; // Included as requested for a .jsx service file, though it contains pure JS.
+const API_BASE_URL = 'http://localhost:5000/scan';
 
-// --- API Configuration and Utilities ---
-const API_BASE_URL = 'http://localhost:5000/scan'; 
-const MAX_RETRIES = 3; 
+// Helper function for exponential backoff retry logic
+const fetchWithRetry = async (url, options = {}, retries = 3) => {
+    let lastError = null;
+    for (let i = 0; i < retries; i++) {
+        const delay = Math.pow(2, i) * 1000; // 1s, 2s, 4s...
+        if (i > 0) await new Promise(resolve => setTimeout(resolve, delay));
 
-// Utility for creating a delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-/**
- * Executes a fetch request with exponential backoff for resilience against transient network issues.
- * @param {string} endpoint - The API endpoint relative to the base URL (e.g., '/scans').
- * @param {object} options - Fetch options (method, headers, body, etc.).
- * @returns {Promise<object>} The parsed JSON response body.
- * @throws {Error} If all retry attempts fail.
- */
-const fetchWithRetry = async (endpoint, options = {}) => {
-  for (let i = 0; i < MAX_RETRIES; i++) {
-    try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-      
-      if (!response.ok) {
-        // Attempt to parse the server error message
-        const errorBody = await response.json().catch(() => ({ message: 'Unknown server error' }));
-        throw new Error(`Server Error: ${response.status} - ${errorBody.message || response.statusText}`);
-      }
-      
-      return response.json();
-      
-    } catch (error) {
-      if (i === MAX_RETRIES - 1) {
-        // Throw the final error if retries are exhausted
-        console.error(`[API] Failed to fetch ${endpoint} after ${MAX_RETRIES} attempts.`, error);
-        throw new Error(error.message || `Network error or server unavailable.`);
-      }
-      
-      // Calculate exponential backoff delay (2s, 4s, 8s, ...) + small random jitter
-      const waitTime = Math.pow(2, i + 1) * 1000 + Math.random() * 500;
-      console.warn(`[API] Attempt ${i + 1} failed for ${endpoint}. Retrying in ${Math.round(waitTime / 1000)}s...`);
-      await delay(waitTime);
+        try {
+            const response = await fetch(url, options);
+            if (response.ok) {
+                return response;
+            } else if (response.status === 404) {
+                // Do not retry 404s
+                throw new Error(`Resource not found at ${url}`);
+            } else {
+                // Throw an error for server issues or API errors to trigger retry
+                const errorBody = await response.text();
+                throw new Error(`HTTP error ${response.status}: ${errorBody}`);
+            }
+        } catch (error) {
+            lastError = error;
+            console.warn(`Attempt ${i + 1} failed for ${url}. Retrying in ${delay / 1000}s. Error: ${error.message}`);
+        }
     }
-  }
+    throw new Error(`API request failed after ${retries} attempts. Last error: ${lastError?.message}`);
 };
 
 /**
- * API Call 1: Initiates a new security scan job.
- * Endpoint: POST /scan/scans
- * @param {object} payload - The scan data { target, scanType, scanOptions }.
- * @returns {Promise<object>} The response data, typically containing the unique scanId (e.g., { scanId: '...' }).
+ * Provides a dummy user ID for manual authentication/testing.
+ * Since the backend is currently using a hardcoded dummy ID, the frontend 
+ * only needs to supply a non-empty string to satisfy the header requirement.
+ * @returns {string} A dummy user ID.
  */
-export const initiateScan = async (payload) => {
-  return fetchWithRetry('/scans', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+const getDummyUserId = () => {
+    return 'frontend-test-user';
+};
+
+
+/**
+ * POST /scan/scans
+ * Initiates a new scan job on the backend.
+ * @param {object} formData - The structured data for the scan.
+ * @returns {Promise<object>} The scan initiation response (scanId, status, message).
+ */
+export const initiateScan = async (formData) => {
+    const userId = getDummyUserId(); // Use the simplified function
+    const url = `${API_BASE_URL}/scans`;
+
+    const payload = {
+        target: formData.target,
+        scanType: formData.scanType,
+        // Optional: Include scanOptions if you add controls for them later
+        // scanOptions: {} 
+    };
+
+    const response = await fetchWithRetry(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // Send user ID in a custom header
+            'X-User-ID': userId 
+        },
+        body: JSON.stringify(payload)
+    });
+
+    return response.json();
 };
 
 /**
- * API Call 2: Fetches the current status and results of a specific scan job.
- * Endpoint: GET /scan/scans/:scanId
- * @param {string} scanId - The unique ID of the scan job.
- * @returns {Promise<object>} The scan status object (e.g., { status: 'COMPLETE', findings: [...] }).
+ * GET /scan/scans/:scanId
+ * Retrieves the current status of a scan job.
+ * @param {string} scanId - The ID of the scan job.
+ * @returns {Promise<object>} The scan details object.
  */
 export const getScanStatus = async (scanId) => {
-  if (!scanId) {
-    throw new Error("Scan ID is required to fetch status.");
-  }
-  return fetchWithRetry(`/scans/${scanId}`, {
-    method: 'GET',
-  });
+    const url = `${API_BASE_URL}/scans/${scanId}`;
+    const response = await fetchWithRetry(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    });
+    return response.json();
 };
