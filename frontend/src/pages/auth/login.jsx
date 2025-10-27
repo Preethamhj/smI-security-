@@ -1,216 +1,305 @@
-import React, { useState } from 'react';
-import { Lock, Mail, Eye, EyeOff, Shield } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Points, PointMaterial, Line } from '@react-three/drei';
+import * as THREE from 'three';
+import { useSpring, animated, config } from '@react-spring/web';
+import { Shield, Lock, User, Eye, EyeOff } from 'lucide-react';
 
-export default function Login() {
+// Particle field background
+function ParticleField() {
+  const pointsRef = useRef();
+  const particleCount = 2000;
+  
+  const positions = React.useMemo(() => {
+    const pos = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      pos[i * 3] = (Math.random() - 0.5) * 20;
+      pos[i * 3 + 1] = (Math.random() - 0.5) * 20;
+      pos[i * 3 + 2] = (Math.random() - 0.5) * 20;
+    }
+    return pos;
+  }, []);
+
+  useFrame((state) => {
+    if (pointsRef.current) {
+      pointsRef.current.rotation.y = state.clock.elapsedTime * 0.05;
+      pointsRef.current.rotation.x = state.clock.elapsedTime * 0.03;
+    }
+  });
+
+  return (
+    <Points ref={pointsRef} positions={positions} stride={3} frustumCulled={false}>
+      <PointMaterial
+        transparent
+        color="#00ff9d"
+        size={0.05}
+        sizeAttenuation={true}
+        depthWrite={false}
+        opacity={0.6}
+      />
+    </Points>
+  );
+}
+
+// Rotating hexagon grid
+function HexGrid() {
+  const groupRef = useRef();
+  
+  useFrame((state) => {
+    if (groupRef.current) {
+      groupRef.current.rotation.z = state.clock.elapsedTime * 0.1;
+    }
+  });
+
+  const hexagons = [];
+  const radius = 0.5;
+  const layers = 3;
+  
+  for (let layer = 0; layer < layers; layer++) {
+    const count = layer === 0 ? 1 : layer * 6;
+    const layerRadius = layer * 1.5;
+    
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const x = Math.cos(angle) * layerRadius;
+      const y = Math.sin(angle) * layerRadius;
+      
+      const points = [];
+      for (let j = 0; j <= 6; j++) {
+        const a = (j / 6) * Math.PI * 2;
+        points.push(new THREE.Vector3(
+          x + Math.cos(a) * radius,
+          y + Math.sin(a) * radius,
+          0
+        ));
+      }
+      
+      hexagons.push(
+        <Line
+          key={`hex-${layer}-${i}`}
+          points={points}
+          color="#00ff9d"
+          lineWidth={1}
+          transparent
+          opacity={0.3}
+        />
+      );
+    }
+  }
+
+  return (
+    <group ref={groupRef} position={[0, 0, -5]}>
+      {hexagons}
+    </group>
+  );
+}
+
+// Orbiting shield icon
+function SecurityShield() {
+  const shieldRef = useRef();
+  
+  useFrame((state) => {
+    if (shieldRef.current) {
+      shieldRef.current.rotation.y = state.clock.elapsedTime * 0.5;
+      shieldRef.current.position.y = Math.sin(state.clock.elapsedTime) * 0.3;
+    }
+  });
+
+  return (
+    <mesh ref={shieldRef} position={[4, 0, -3]}>
+      <octahedronGeometry args={[0.5, 0]} />
+      <meshStandardMaterial
+        color="#00ff9d"
+        emissive="#00ff9d"
+        emissiveIntensity={0.5}
+        wireframe
+      />
+    </mesh>
+  );
+}
+
+// Main login component
+export default function CyberLogin() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+  const [isFocused, setIsFocused] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const formSpring = useSpring({
+    from: { opacity: 0, transform: 'translateY(50px)' },
+    to: { opacity: 1, transform: 'translateY(0px)' },
+    config: config.slow,
+  });
+
+  const glowSpring = useSpring({
+    boxShadow: isFocused
+      ? '0 0 30px rgba(0, 255, 157, 0.5), inset 0 0 20px rgba(0, 255, 157, 0.1)'
+      : '0 0 15px rgba(0, 255, 157, 0.2), inset 0 0 10px rgba(0, 255, 157, 0.05)',
+    config: config.gentle,
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Login attempt:', formData);
-  };
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setIsLoading(true);
+    // Simulate login
+    setTimeout(() => {
+      setIsLoading(false);
+      alert('Login simulation - integrate with your backend');
+    }, 2000);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse top-0 -left-20"></div>
-        <div className="absolute w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse bottom-0 -right-20 animation-delay-2000"></div>
-        <div className="absolute w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animation-delay-4000"></div>
+    <div className="relative w-full h-screen bg-black overflow-hidden">
+      {/* Three.js Background */}
+      <div className="absolute inset-0">
+        <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
+          <ambientLight intensity={0.5} />
+          <pointLight position={[10, 10, 10]} intensity={1} color="#00ff9d" />
+          <ParticleField />
+          <HexGrid />
+          <SecurityShield />
+        </Canvas>
       </div>
 
-      {/* Grid Pattern Overlay */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+      {/* Scan line effect */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-30 animate-scan" />
+      </div>
 
-      <div className="w-full max-w-md relative z-10">
-        {/* Logo Section */}
-        <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl mb-4 shadow-2xl shadow-blue-500/50 animate-float">
-            <Shield className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold text-white mb-2">SecureLayers</h1>
-          <p className="text-cyan-300 text-lg">Welcome Back to SecureLayers</p>
-          {/* Removed: "Secure your digital infrastructure" */}
-        </div>
-
-        {/* Login Form */}
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-slate-700/50 animate-slide-up">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Field */}
-            <div className="space-y-2">
-              <label className="text-gray-300 text-sm font-medium block">
-                Email Address
-              </label>
-              <div className="relative group">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-cyan-400 transition-colors" />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-12 pr-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                  placeholder="Enter your email"
-                  required
-                />
+      {/* Login Form Container */}
+      <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
+        <animated.div 
+          style={formSpring}
+          className="w-full max-w-md"
+        >
+          <animated.div
+            style={glowSpring}
+            className="backdrop-blur-md bg-black/40 border border-cyan-500/30 rounded-lg p-8 shadow-2xl"
+          >
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center mb-4">
+                <div className="relative">
+                  <Shield className="w-16 h-16 text-cyan-400" strokeWidth={1.5} />
+                  <div className="absolute inset-0 blur-xl bg-cyan-400/30 -z-10" />
+                </div>
               </div>
+              <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400 mb-2">
+                SECURE ACCESS
+              </h1>
+              <p className="text-gray-400 text-sm tracking-widest">AUTHENTICATION REQUIRED</p>
             </div>
 
-            {/* Password Field */}
-            <div className="space-y-2">
-              <label className="text-gray-300 text-sm font-medium block">
-                Password
-              </label>
-              <div className="relative group">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-cyan-400 transition-colors" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-12 pr-12 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                  placeholder="Enter your password."
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-cyan-400 transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Username Field */}
+              <div className="relative">
+                <label className="block text-cyan-400 text-xs font-mono mb-2 uppercase tracking-wider">
+                  Username
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400/50" />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    onFocus={() => setIsFocused('username')}
+                    onBlur={() => setIsFocused(null)}
+                    className="w-full bg-black/50 border border-cyan-500/30 rounded pl-11 pr-4 py-3 text-cyan-100 placeholder-gray-600 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,255,157,0.3)] transition-all font-mono"
+                    placeholder="Enter username"
+                    required
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center text-gray-300 cursor-pointer hover:text-white transition-colors">
-                <input
-                  type="checkbox"
-                  className="mr-2 rounded border-gray-600 text-cyan-500 focus:ring-cyan-500"
-                />
-                Remember me
-              </label>
-              <a
-                href="#"
-                className="text-cyan-400 hover:text-cyan-300 transition-colors"
+              {/* Password Field */}
+              <div className="relative">
+                <label className="block text-cyan-400 text-xs font-mono mb-2 uppercase tracking-wider">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-cyan-400/50" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setIsFocused('password')}
+                    onBlur={() => setIsFocused(null)}
+                    className="w-full bg-black/50 border border-cyan-500/30 rounded pl-11 pr-12 py-3 text-cyan-100 placeholder-gray-600 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_15px_rgba(0,255,157,0.3)] transition-all font-mono"
+                    placeholder="Enter password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400/50 hover:text-cyan-400 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember & Forgot */}
+              <div className="flex items-center justify-between text-xs">
+                <label className="flex items-center text-gray-400 cursor-pointer hover:text-cyan-400 transition-colors">
+                  <input type="checkbox" className="mr-2 accent-cyan-400" />
+                  <span className="font-mono">Remember Me</span>
+                </label>
+                <a href="#" className="text-cyan-400 hover:text-emerald-400 transition-colors font-mono">
+                  Forgot Password?
+                </a>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-cyan-500 to-emerald-500 text-black font-bold py-3 rounded uppercase tracking-wider hover:shadow-[0_0_30px_rgba(0,255,157,0.5)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-mono relative overflow-hidden group"
               >
-                Forgot password?
-              </a>
+                <span className={isLoading ? 'opacity-0' : ''}>Initialize Access</span>
+                {isLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
+              </button>
+            </form>
+
+            {/* Footer */}
+            <div className="mt-6 pt-6 border-t border-cyan-500/20 text-center">
+              <p className="text-gray-500 text-xs font-mono">
+                SECURED BY <span className="text-cyan-400">QUANTUM ENCRYPTION</span>
+              </p>
             </div>
+          </animated.div>
 
-            {/* Login Button */}
-            <button
-              type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-slate-900 transform hover:scale-105 transition-all shadow-lg shadow-blue-500/50"
-            >
-              Sign In
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="my-6 flex items-center">
-            <div className="flex-1 border-t border-slate-700"></div>
-            <span className="px-4 text-gray-500 text-sm">OR</span>
-            <div className="flex-1 border-t border-slate-700"></div>
+          {/* Status indicators */}
+          <div className="flex justify-center gap-4 mt-6">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(0,255,157,0.8)]" />
+              <span className="text-emerald-400 text-xs font-mono">SECURE</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(0,255,255,0.8)]" />
+              <span className="text-cyan-400 text-xs font-mono">ENCRYPTED</span>
+            </div>
           </div>
-
-          {/* Sign Up Link */}
-          <p className="text-center text-gray-400">
-            Don't have an account?{' '}
-            <a
-              href="/register"
-              className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
-            >
-              Sign Up
-            </a>
-          </p>
-        </div>
-
-        {/* Security Badge */}
-        <div className="mt-6 text-center">
-          <p className="text-gray-500 text-xs flex items-center justify-center gap-2">
-            <Lock className="w-3 h-3" />
-            Your data is protected with enterprise-grade encryption
-          </p>
-        </div>
+        </animated.div>
       </div>
 
-      {/* Custom Animations & Styles */}
       <style jsx>{`
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px);
+        @keyframes scan {
+          0% {
+            top: -10%;
           }
-          50% {
-            transform: translateY(-20px);
-          }
-        }
-
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
+          100% {
+            top: 110%;
           }
         }
-
-        @keyframes slide-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-
-        .animate-fade-in {
-          animation: fade-in 0.8s ease-out;
-        }
-
-        .animate-slide-up {
-          animation: slide-up 0.8s ease-out;
-        }
-
-        .bg-grid-pattern {
-          background-image: linear-gradient(
-              rgba(255, 255, 255, 0.05) 1px,
-              transparent 1px
-            ),
-            linear-gradient(
-              90deg,
-              rgba(255, 255, 255, 0.05) 1px,
-              transparent 1px
-            );
-          background-size: 50px 50px;
-        }
-
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-
-        .animation-delay-4000 {
-          animation-delay: 4s;
+        .animate-scan {
+          animation: scan 8s linear infinite;
         }
       `}</style>
     </div>
